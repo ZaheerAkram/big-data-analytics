@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 
@@ -15,7 +14,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
-    // <AuthProvider>
+    <AuthProvider>
       <Router>
         <Routes>
           {/* Public routes */}
@@ -33,10 +32,11 @@ function App() {
           
           {/* Redirect and Not Found */}
           <Route path="/" element={<Navigate to="/login" replace />} />
+          {/* <Route path="/" element={< NotFound/>} /> */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
-    // </AuthProvider>
+    </AuthProvider>
   );
 }
 
