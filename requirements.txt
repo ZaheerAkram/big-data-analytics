@@ -3,3 +3,14 @@ opencv-python
 tensorflow
 numpy
 dlib
+
+openai-whisper
+transformers
+langchain
+langchain-huggingface
+huggingface_hub
+python-dotenv
+langchain-community
+
+
+# Download FFmpeg
