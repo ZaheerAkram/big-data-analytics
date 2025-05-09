@@ -1,0 +1,71 @@
+/ai-interview-session-platform
+│
+├── /frontend
+│   ├── streamlit_app.py           # Streamlit app (UI)
+│   ├── assets/                    # Static files (images, icons, etc.)
+│   └── /scripts                   # Python scripts for frontend handling
+│
+├── /backend
+│   ├── app.py                     # FastAPI or Flask backend for API handling
+│   ├── /models                    # AI models for emotion detection, LLM, etc.
+│   │   ├── face_detection.py      # Face detection model
+│   │   ├── emotion_recognition.py # Emotion recognition model
+│   │   └── question_answering.py  # LLM question-answering model
+│   ├── /db                        # Database connections (RDS, ORM models)
+│   ├── /services                  # Services (API calls, processing logic)
+│   └── requirements.txt           # Backend dependencies
+│
+├── /data
+│   ├── /audio                     # Audio data storage (S3)
+│   ├── /videos                    # Video data storage (S3)
+│   └── /logs                      # Logs, transcripts, and model outputs
+│
+├── /deploy
+│   ├── Dockerfile                 # Docker file for containerization
+│   └── aws-deploy.yml             # AWS deployment configurations (Elastic Beanstalk, etc.)
+│
+├── /scripts
+│   ├── model_deployment.py        # Model deployment script (SageMaker, Lambda)
+│   └── data_preprocessing.py      # Script for preprocessing data
+│
+└── requirements.txt               # Project dependencies for both frontend and backend
+
+
+
+
+frontend/
+├── assets/               # Static files like images, CSS, etc.
+│   ├── logo.png
+│   └── ...
+├── pages/
+│   ├── candidate_login.py
+│   ├── candidate_signup.py
+│   ├── interview_selection.py
+│   ├── interview_screen.py
+│   ├── score_screen.py
+│   ├── admin_dashboard.py
+│   └── candidate_status.py (Optional)
+├── utils/
+│   ├── auth.py           # Helper functions for authentication
+│   └── api.py            # Helper functions for API calls
+└── main.py               # Entry point to run the app
+
+
+
+interview_app/
+├── app.py
+├── config.py
+├── static/
+│   ├── css/
+│   │   └── main.css
+│   └── js/
+│       ├── interview.js
+│       ├── recorder.js
+│       └── timer.js
+├── templates/
+│   ├── base.html
+│   └── interview.html
+└── modules/
+    ├── __init__.py
+    ├── interview.py
+    └── storage.py

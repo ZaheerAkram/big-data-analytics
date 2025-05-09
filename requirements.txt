@@ -2,7 +2,7 @@ mediapipe
 opencv-python
 tensorflow
 numpy
-dlib
+# dlib
 
 openai-whisper
 transformers
@@ -12,5 +12,44 @@ huggingface_hub
 python-dotenv
 langchain-community
 
+# For the Backend Folder
+django
 
-# Download FFmpeg
+# For frontend streamlit
+streamlit
+requests
+streamlit-option-menu
+
+flask 
+flask-cors
+flask-socketio 
+eventlet
+opencv-python
+
+
+
+# For Ai-bot
+openai-whisper
+transformers
+langchain
+langchain-huggingface
+huggingface_hub
+sounddevice
+soundfile
+numpy
+requests
+keyboard
+python-dotenv
+sounddevice
+python-dotenv
+langchain
+langchain-groq
+edge-tts
+pygame
+numpy
+
+# for FastAPI
+fastapi
+uvicorn
+requests
+python-multipart

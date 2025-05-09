@@ -46,9 +46,7 @@ def record_audio(filename=AUDIO_FILE):
 
 
 # --- Transcribe audio using Whisper API ---
-def speech_text():
-    
-    buffer = record_audio()
+def speech_text(buffer):
     
     print("⏳ Transcribing audio...")
     start_time = time.time()
@@ -71,8 +69,11 @@ def speech_text():
 
 # --- Main Execution ---
 def main():
-    text = speech_text()
-    print("\n📝 Transcribed Text:\n", text)
+    with open("Components/1.mp3", "rb") as f:
+        buffer = io.BytesIO(f.read())  # Load file into buffer
+        buffer.seek(0)
+        text = speech_text(buffer)
+        print("\n📝 Transcribed Text:\n", text)
 
 if __name__ == "__main__":
     main()

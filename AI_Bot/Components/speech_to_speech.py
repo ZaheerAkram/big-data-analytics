@@ -13,7 +13,8 @@ async def main():
     print(f"Candidate ID: {candidate_id}")
     await text_speech("Welcome to the interview! Please introduce yourself.", voice="en-GB-RyanNeural")
     
-    text = speech_text()
+    audio = record_audio()
+    text = speech_text(audio)
     print("\n📝 Transcribed Text:\n", text)
     
     history, all_history = text_to_text_interview(job_title, difficulty_level, candidate_id, text)
