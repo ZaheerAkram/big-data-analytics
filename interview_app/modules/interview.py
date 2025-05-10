@@ -139,3 +139,71 @@ def get_questions():
         "Describe a challenging situation you faced and how you handled it."
     ]
     return jsonify(questions)
+
+@interview_bp.route('/save-audio-chunk', methods=['POST'])
+def save_audio_chunk():
+    """Save an audio chunk from the interview"""
+    data = request.get_json()
+    
+    if not data or 'audio' not in data:
+        return jsonify({'error': 'No audio data provided'}), 400
+    
+    try:
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        
+        # Remove the data URL prefix if it exists
+        audio_data = data['audio']
+        if ',' in audio_data:
+            audio_data = audio_data.split(',')[1]
+            
+        audio_binary = base64.b64decode(audio_data)
+        
+        # Create filename with timestamp
+        audio_filename = f'interview_audio_{timestamp}.webm'
+        audio_path = os.path.join(current_app.config['UPLOAD_FOLDER'], audio_filename)
+        
+        with open(audio_path, 'wb') as f:
+            f.write(audio_binary)
+            
+        return jsonify({
+            'success': True,
+            'message': 'Audio chunk saved successfully',
+            'path': audio_path
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@interview_bp.route('/save-video', methods=['POST'])
+def save_video():
+    """Save the video recording"""
+    data = request.get_json()
+    
+    if not data or 'video' not in data:
+        return jsonify({'error': 'No video data provided'}), 400
+    
+    try:
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        
+        # Remove the data URL prefix if it exists
+        video_data = data['video']
+        if ',' in video_data:
+            video_data = video_data.split(',')[1]
+            
+        video_binary = base64.b64decode(video_data)
+        
+        # Create filename with timestamp
+        video_filename = f'interview_video_{timestamp}.webm'
+        video_path = os.path.join(current_app.config['UPLOAD_FOLDER'], video_filename)
+        
+        with open(video_path, 'wb') as f:
+            f.write(video_binary)
+            
+        return jsonify({
+            'success': True,
+            'message': 'Video saved successfully',
+            'path': video_path
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
