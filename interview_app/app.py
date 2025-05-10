@@ -3,9 +3,7 @@ from modules.interview import interview_bp
 import config
 from routes import register_routes
 import os
-from flask_sqlalchemy import SQLAlchemy
-
-db = SQLAlchemy()
+from modules.db import db
 
 def create_app():
     app = Flask(__name__)
