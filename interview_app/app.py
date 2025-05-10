@@ -1,11 +1,21 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 from modules.interview import interview_bp
 import config
 from routes import register_routes
+import os
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(config.Config)
+    
+    # Configure static folder for uploads
+    app.static_folder = 'static'
+    app.static_url_path = '/static'
+    
+    # Add route to serve files from uploads directory
+    @app.route('/uploads/<path:filename>')
+    def serve_upload(filename):
+        return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER']), filename)
     
     # Register blueprints
     app.register_blueprint(interview_bp)

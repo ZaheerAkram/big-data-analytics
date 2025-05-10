@@ -19,7 +19,17 @@ def append_message(file_name: str, message: dict):
         with open(file_path, 'r', encoding='utf-8') as f:
             try:
                 data = json.load(f)
-                if not isinstance(data, list):
+                # Ensure data is a flat list
+                if isinstance(data, list):
+                    # If we have nested lists, flatten them
+                    flattened_data = []
+                    for item in data:
+                        if isinstance(item, list):
+                            flattened_data.extend(item)
+                        else:
+                            flattened_data.append(item)
+                    data = flattened_data
+                else:
                     raise ValueError("Invalid JSON format. Expected a list.")
             except json.JSONDecodeError:
                 data = []
@@ -42,9 +52,18 @@ def read_messages(file_name: str) -> list:
         with open(file_path, 'r', encoding='utf-8') as f:
             try:
                 data = json.load(f)
-                if not isinstance(data, list):
+                # Ensure data is a flat list
+                if isinstance(data, list):
+                    # If we have nested lists, flatten them
+                    flattened_data = []
+                    for item in data:
+                        if isinstance(item, list):
+                            flattened_data.extend(item)
+                        else:
+                            flattened_data.append(item)
+                    return flattened_data
+                else:
                     raise ValueError("Invalid JSON format. Expected a list.")
-                return data
             except json.JSONDecodeError:
                 return []
     else:

@@ -1,5 +1,5 @@
 class InterviewTimer {
-    constructor(displayElement, totalSeconds = 600) {
+    constructor(displayElement, totalSeconds = 180) {
         this.displayElement = displayElement;
         this.totalSeconds = totalSeconds;
         this.remainingSeconds = totalSeconds;

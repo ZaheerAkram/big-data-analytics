@@ -45,7 +45,6 @@ history = [
 def ask_question(history):
     """Generate the next interview question based on the conversation history."""
     response = llm.chat(history)
-    history.append({"role": "assistant", "content": response.content})
     return response.content
 
 def receive_answer(history, candidate_input):
@@ -53,82 +52,43 @@ def receive_answer(history, candidate_input):
     history.append({"role": "user", "content": candidate_input})
     return ask_question(history)
 
-def text_to_text_interview(job_title, difficulty_level, candidate_id, text):
+
+def text_to_text_interview(
+    job_title, difficulty_level, candidate_id, text, file_name="interview_log.json"):
     """Conduct a text-based interview with the candidate."""
-
-    all_history = read_messages("interview_log.json")
-
+    all_history = read_messages(file_name)
+    print("Searching for candidate:", candidate_id)
+    
     # Check if candidate history exists, if not create one
-    if candidate_id not in all_history:
-        print(f"Creating new session for candidate {candidate_id}")
-        
-        all_history = {
-            candidate_id: [
-                {
-                    "role": "system",
-                    "content": SYSTEM_PROMPT.format(job_title=job_title, difficulty_level=difficulty_level)
-                },
-                {
-                    "role": "assistant",
-                    "content": "Welcome to the interview! Please introduce yourself."
-                },
-                {
-                    "role": "user",
-                    "content": text
-                }
-            ]
+    history = None
+    for record in all_history:
+        if str(candidate_id) in record:
+            history = record[str(candidate_id)]
+            print(f"Found existing history for candidate {candidate_id}")
+            history.append({"role": "user", "content": text})
+            return history, all_history
+
+    # If we get here, no existing history was found
+    print(f"✅ Creating new session for candidate {candidate_id}")
+    history = [
+        {
+            "role": "system",
+            "content": SYSTEM_PROMPT.format(job_title=job_title, difficulty_level=difficulty_level)
+        },
+        {
+            "role": "assistant",
+            "content": "Welcome to the interview! Please introduce yourself."
+        },
+        {
+            "role": "user",
+            "content": text
         }
-        
-    else:
-        print(f"Resuming session for candidate {candidate_id}")
-        all_history[candidate_id].insert(0, 
-                {
-                    "role": "assistant",
-                    "content": "Welcome to the interview! Please introduce yourself."
-                },
-                {
-                    "role": "user",
-                    "content": text
-                })
-
-    history = all_history[candidate_id]
+    ]
+    # Create a new record as a dictionary
+    new_record = {str(candidate_id): history}
+    all_history.append(new_record)
     return history, all_history
-    # question = ask_question(history)
-    # print("🧑 Interviewer:", question)
 
-    # # Candidate response loop
-    # while True:
-    #     print("🧑‍💻 Candidate: ")
-        
-    #     user_input = input("🧑‍💻 Candidate: ")
-    #     if user_input.lower() == "exit":
-    #         print("🧑 Interviewer: Thank you for your time.")
-    #         break
-    #     history.append({"role": "user", "content": user_input})
-    #     ai_reply = receive_answer(history, user_input)
-    #     print("🧑 Interviewer:", ai_reply)
-    #     history.append({"role": "assistant", "content": ai_reply})
-
-    # # Save updated history
-    # all_history[candidate_id] = history
-    # append_message("interview_log2.json", all_history)
-
-# text_to_text_interview(job_title = "Machine Learning Engineer (ML Engineer)", difficulty_level = "easy", candidate_id = 102)
-
-# # ---- Example run ----
-# if __name__ == "__main__":
-#     # First Question
-#     print("🧑 Interviewer:", ask_question(history))
-
-#     # Simulate candidate response
-#     while True:
-#         user_input = input("🧑‍💻 Candidate: ")
-#         if user_input.lower() == "exit":
-#             print("🧑 Interviewer: Thank you for your time.")
-#             break
-#         print("🧑 Interviewer:", receive_answer(history, user_input))
-        
-#     append_message("interview_log.json", history)
 
 def main():
     job_title = "Machine Learning Engineer (ML Engineer)"

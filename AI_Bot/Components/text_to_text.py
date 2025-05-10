@@ -53,10 +53,10 @@ def receive_answer(history, candidate_input):
     history.append({"role": "user", "content": candidate_input})
     return ask_question(history)
 
-def text_to_text_interview(job_title, difficulty_level, candidate_id, text):
+def text_to_text_interview(job_title, difficulty_level, candidate_id, text, filename="interview_log.json"):
     """Conduct a text-based interview with the candidate."""
 
-    all_history = read_messages("interview_log.json")
+    all_history = read_messages(filename)
 
     # Check if candidate history exists, if not create one
     if candidate_id not in all_history:

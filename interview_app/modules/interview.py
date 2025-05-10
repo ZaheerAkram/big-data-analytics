@@ -9,6 +9,7 @@ import sys
 import os
 import threading
 import asyncio
+import json
 
 # Add the root directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
@@ -17,14 +18,15 @@ import io
 from .AI_Bot.Components.speech_to_text import speech_text
 from .AI_Bot.Components.text_to_text import text_to_text_interview, ask_question
 from .AI_Bot.Components.text_to_speech import text_speech
+from .AI_Bot.Components.add_history import append_message, read_messages
 
 interview_bp = Blueprint('interview', __name__, url_prefix='/interview')
 
 @interview_bp.route('/')
 def interview():
     """Render the interview page"""
-    initial_question = "Welcome to the interview! Please introduce yourself."
-    return render_template('interview.html', generated_question=initial_question)
+    system_audio_path = "system.mp3"  # The system audio file in uploads directory
+    return render_template('interview.html', system_audio_path=system_audio_path)
 
 @interview_bp.route('/save-video', methods=['POST'])
 def save_video():
@@ -85,7 +87,8 @@ def generate_question():
     
     job_title = "Machine Learning Engineer (ML Engineer)"
     difficulty_level = "easy"
-    candidate_id = 110
+    candidate_id = "110"
+    file_name = "interview_log.json"
     
     try:
         data = request.get_json()
@@ -94,10 +97,31 @@ def generate_question():
             
         human_text = data['text']
         
-        history, all_history = text_to_text_interview(job_title, difficulty_level, candidate_id, human_text)
+        history, all_history = text_to_text_interview(job_title, difficulty_level, candidate_id, human_text, file_name)
+        print("history: ", history)
+        print("all_history: ", all_history)
     
         question = ask_question(history)
         print("Interviewer:", question)
+        
+        history.append({"role": "assistant", "content": question})
+        
+        # Save updated history
+        # Find and update the existing record
+        found = False
+        for record in all_history:
+            if str(candidate_id) in record:
+                record[str(candidate_id)] = history
+                found = True
+                break
+        
+        # If no existing record found, create a new one
+        if not found:
+            all_history.append({str(candidate_id): history})
+            
+        # Save the entire history as a single update
+        with open("ChatData/interview_log.json", 'w', encoding='utf-8') as f:
+            json.dump(all_history, f, indent=4, ensure_ascii=False)
         
         # Convert question to speech using asyncio
         loop = asyncio.new_event_loop()

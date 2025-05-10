@@ -40,7 +40,7 @@ async def main():
 
     # Save updated history
     all_history[candidate_id] = history
-    append_message("interview_log2.json", all_history)
+    append_message("interview_log.json", all_history)
 
     
 asyncio.run(main())

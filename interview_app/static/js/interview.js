@@ -8,6 +8,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const cancelButton = document.getElementById("cancelInterview");
   const notificationElement = document.getElementById("notification");
   const micToggle2 = document.getElementById("micLabel2");
+  const startOverlay = document.getElementById("startOverlay");
+  const startInterviewBtn = document.getElementById("startInterviewBtn");
 
   // Initialize classes
   const timer = new InterviewTimer(timerElement);
@@ -19,6 +21,26 @@ document.addEventListener("DOMContentLoaded", () => {
   let audioRecorder = null; // Audio recorder instance
   let audioChunks = []; // Array to store audio chunks
   let isAudioRecording = false; // Track audio recording state
+
+  // System audio
+  const systemAudio = new Audio('/uploads/system.mp3');
+
+  // Start interview button click handler
+  startInterviewBtn.addEventListener('click', async () => {
+    try {
+      // Play system audio
+      await systemAudio.play();
+      
+      // Hide the start overlay
+      startOverlay.style.display = 'none';
+      
+      // Initialize the interview
+      await initInterview();
+    } catch (error) {
+      console.error("Error starting interview:", error);
+      showNotification("Error starting interview", "bg-red-500");
+    }
+  });
 
   // Initialize the interview
   async function initInterview() {
@@ -259,7 +281,4 @@ document.addEventListener("DOMContentLoaded", () => {
       endInterview("Recording cancelled by user");
     }
   });
-
-  // Start the interview
-  initInterview();
 });

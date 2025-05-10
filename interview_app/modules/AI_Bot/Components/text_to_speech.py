@@ -40,7 +40,7 @@ async def text_speech(prompt: str, voice: str = "en-GB-RyanNeural") -> str:
         return ""
 
 async def main():
-    prompt = "This is a fast and natural voice using Edge TTS from Microsoft."
+    prompt = "Welcome to the interview! Please introduce yourself."
     
     voices = [
         "en-GB-RyanNeural",  # UK male

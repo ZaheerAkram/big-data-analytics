@@ -36,7 +36,7 @@ def append_message(file_name: str, message: dict):
 
 def read_messages(file_name: str) -> list:
     """Reads messages from a .json file and returns them as a list."""
-    file_path = os.path.join("./ChatData", file_name)
+    file_path = os.path.join("../ChatData", file_name)
 
     if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
         with open(file_path, 'r', encoding='utf-8') as f:
