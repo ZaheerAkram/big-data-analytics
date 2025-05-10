@@ -6,44 +6,46 @@ document.addEventListener('DOMContentLoaded', () => {
     const timerElement = document.getElementById('timer');
     const micToggleButton = document.getElementById('micToggle');
     const cancelButton = document.getElementById('cancelInterview');
-    const questionElement = document.getElementById('currentQuestion');
-    const nextQuestionButton = document.getElementById('nextQuestion');
     const notificationElement = document.getElementById('notification');
 
     // Initialize classes
-    const recorder = new MediaRecorder();
     const timer = new InterviewTimer(timerElement);
+    const recorder = new MediaRecorder(); // Initialize the recorder
     
     // Application state
-    let questions = [];
-    let currentQuestionIndex = 0;
-    let micMuted = false;
+    let micMuted = true; // Start with microphone muted
+    let mediaStream = null;
+    let isRecording = false; // Track if we're currently recording audio
     
     // Initialize the interview
     async function initInterview() {
         try {
             // Request permissions and initialize webcam
-            const stream = await recorder.requestPermissions();
-            webcamElement.srcObject = stream;
+            mediaStream = await recorder.requestPermissions();
+            webcamElement.srcObject = mediaStream;
             
-            // Load questions
-            await loadQuestions();
+            // Start recording
+            recorder.startRecording();
+            
+            // Set up audio chunk handler
+            recorder.onAudioChunk(async (chunk) => {
+                await saveAudioChunk(chunk);
+            });
             
             // Start the timer
             timer.start();
             
-            // Show the first question
-            if (questions.length > 0) {
-                showQuestion(0);
-            }
-            
-            // Start recording
-            recorder.startRecording();
             showNotification('Recording started', 'bg-green-500');
             
             // Set up timer completion handler
             timer.onComplete(() => {
                 endInterview('Time limit reached');
+            });
+
+            // Initialize microphone state
+            const audioTracks = mediaStream.getAudioTracks();
+            audioTracks.forEach(track => {
+                track.enabled = false; // Start with audio disabled
             });
         } catch (error) {
             console.error('Error initializing interview:', error);
@@ -51,41 +53,37 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Load the interview questions
-    async function loadQuestions() {
-        try {
-            const response = await fetch('/interview/questions');
-            questions = await response.json();
-        } catch (error) {
-            console.error('Error loading questions:', error);
-            questions = [
-                "Failed to load questions. Please refresh the page."
-            ];
-        }
-    }
-    
-    // Display a question
-    function showQuestion(index) {
-        if (index >= 0 && index < questions.length) {
-            questionElement.textContent = questions[index];
-            currentQuestionIndex = index;
-        }
-    }
-    
     // Toggle microphone mute status
-    function toggleMicrophone() {
-        if (!recorder.stream) return;
+    async function toggleMicrophone() {
+        if (!mediaStream) return;
         
-        const audioTracks = recorder.stream.getAudioTracks();
+        const audioTracks = mediaStream.getAudioTracks();
         micMuted = !micMuted;
         
         audioTracks.forEach(track => {
             track.enabled = !micMuted;
         });
         
+        // Start/stop audio recording based on mute status
+        if (!micMuted && !isRecording) {
+            // Start recording when unmuted
+            recorder.startAudioRecording();
+            isRecording = true;
+        } else if (micMuted && isRecording) {
+            // Stop recording when muted
+            await recorder.stopAudioRecording();
+            isRecording = false;
+        }
+        
+        // Update button appearance
         micToggleButton.innerHTML = micMuted ? 
-            '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clip-rule="evenodd" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" /></svg> Microphone Off' : 
-            '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg> Microphone On';
+            '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" /></svg>Microphone Off' : 
+            '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>Microphone On';
+        
+        // Update button color
+        micToggleButton.className = micMuted ? 
+            'flex items-center bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md transition-colors duration-200' : 
+            'flex items-center bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md transition-colors duration-200';
     }
     
     // Show notification
@@ -100,19 +98,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 5000);
     }
     
-    // Save recordings to server
-    async function saveRecordings() {
+    // Save video recording to server
+    async function saveVideoRecording() {
         try {
-            const audioBase64 = await recorder.getAudioAsBase64();
             const videoBase64 = await recorder.getVideoAsBase64();
             
-            const response = await fetch('/interview/save-recording', {
+            const response = await fetch('/interview/save-video', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    audio: audioBase64,
                     video: videoBase64
                 })
             });
@@ -120,13 +116,66 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
             
             if (result.success) {
-                showNotification('Interview recordings saved successfully', 'bg-green-500');
+                showNotification('Video saved successfully', 'bg-green-500');
             } else {
                 throw new Error(result.error || 'Unknown error');
             }
         } catch (error) {
-            console.error('Error saving recordings:', error);
-            showNotification('Error saving recordings', 'bg-red-500');
+            console.error('Error saving video:', error);
+            showNotification('Error saving video', 'bg-red-500');
+        }
+    }
+
+    // Save an audio chunk to the server
+    async function saveAudioChunk(chunk) {
+        try {
+            const response = await fetch('/interview/save-audio-chunk', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    audio: chunk.audio,
+                    index: chunk.index,
+                    timestamp: chunk.timestamp
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (!result.success) {
+                console.error('Error saving audio chunk:', result.error);
+            }
+        } catch (error) {
+            console.error('Error saving audio chunk:', error);
+        }
+    }
+
+    // Save all audio recordings
+    async function saveAllAudioRecordings() {
+        try {
+            const allAudioBase64 = await recorder.getAllAudioRecordingsAsBase64();
+            
+            const response = await fetch('/interview/save-recording', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    allAudio: allAudioBase64
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showNotification('All audio recordings saved successfully', 'bg-green-500');
+            } else {
+                throw new Error(result.error || 'Unknown error');
+            }
+        } catch (error) {
+            console.error('Error saving audio recordings:', error);
+            showNotification('Error saving audio recordings', 'bg-red-500');
         }
     }
     
@@ -134,45 +183,29 @@ document.addEventListener('DOMContentLoaded', () => {
     async function endInterview(reason = 'Interview ended') {
         timer.stop();
         
-        // Stop recording
+        // Stop recording and save all recordings
         await recorder.stopRecording();
+        await saveVideoRecording();
+        await saveAllAudioRecordings();
         
-        // Save recordings
-        await saveRecordings();
-        
-        // Clean up resources
+        // Cleanup
         recorder.cleanup();
         
-        // Show completion message
         showNotification(reason, 'bg-blue-500');
-        
-        // Disable buttons
         micToggleButton.disabled = true;
         cancelButton.disabled = true;
-        nextQuestionButton.disabled = true;
         
-        // Redirect after a delay
         setTimeout(() => {
-            window.location.href = '/';
-        }, 5000);
+            window.location.href = '/dashboard';
+        }, 2000);
     }
     
     // Event listeners
     micToggleButton.addEventListener('click', toggleMicrophone);
     
     cancelButton.addEventListener('click', () => {
-        if (confirm('Are you sure you want to end the interview?')) {
-            endInterview('Interview cancelled by user');
-        }
-    });
-    
-    nextQuestionButton.addEventListener('click', () => {
-        const nextIndex = currentQuestionIndex + 1;
-        if (nextIndex < questions.length) {
-            showQuestion(nextIndex);
-        } else {
-            // Loop back to the first question
-            showQuestion(0);
+        if (confirm('Are you sure you want to end the recording?')) {
+            endInterview('Recording cancelled by user');
         }
     });
     

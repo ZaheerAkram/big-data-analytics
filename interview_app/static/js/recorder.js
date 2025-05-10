@@ -11,12 +11,15 @@ class MediaRecorder {
         this.isAudioRecording = false;
         this.audioRecordings = []; // Array to store multiple audio recordings
         this.currentAudioIndex = 0;
+        this.chunkInterval = 1000; // Save chunks every 1 second
+        this.lastChunkTime = 0;
         this.callbacks = {
             onStart: null,
             onStop: null,
             onError: null,
             onAudioStart: null,
-            onAudioStop: null
+            onAudioStop: null,
+            onAudioChunk: null // New callback for audio chunks
         };
     }
 
@@ -67,7 +70,7 @@ class MediaRecorder {
         return true;
     }
 
-    // Start audio recording separately
+    // Start audio recording separately with chunk handling
     startAudioRecording() {
         if (!this.stream || this.isAudioRecording) {
             return false;
@@ -75,21 +78,33 @@ class MediaRecorder {
 
         // Reset audio chunks
         this.audioChunks = [];
+        this.lastChunkTime = Date.now();
 
-        // Create audio recorder
+        // Create audio recorder with specific options for chunking
         this.audioRecorder = new window.MediaRecorder(
-            new MediaStream(this.stream.getAudioTracks())
+            new MediaStream(this.stream.getAudioTracks()),
+            {
+                mimeType: 'audio/webm',
+                audioBitsPerSecond: 128000 // 128kbps for good quality
+            }
         );
         
         // Set up audio recorder events
         this.audioRecorder.ondataavailable = (event) => {
             if (event.data.size > 0) {
                 this.audioChunks.push(event.data);
+                
+                // Check if it's time to save a chunk
+                const currentTime = Date.now();
+                if (currentTime - this.lastChunkTime >= this.chunkInterval) {
+                    this.saveAudioChunk();
+                    this.lastChunkTime = currentTime;
+                }
             }
         };
 
-        // Start recording
-        this.audioRecorder.start();
+        // Start recording with timeslice for regular chunk generation
+        this.audioRecorder.start(this.chunkInterval);
         this.isAudioRecording = true;
         this.currentAudioIndex++;
 
@@ -100,6 +115,29 @@ class MediaRecorder {
         return true;
     }
 
+    // Save the current audio chunk
+    async saveAudioChunk() {
+        if (this.audioChunks.length === 0) return;
+
+        // Create a blob from the current chunks
+        const chunkBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+        
+        // Convert to base64
+        const base64Data = await this._blobToBase64(chunkBlob);
+        
+        // Call the chunk callback if set
+        if (typeof this.callbacks.onAudioChunk === 'function') {
+            this.callbacks.onAudioChunk({
+                index: this.currentAudioIndex,
+                audio: base64Data,
+                timestamp: Date.now()
+            });
+        }
+        
+        // Clear the chunks after saving
+        this.audioChunks = [];
+    }
+
     // Stop audio recording separately
     stopAudioRecording() {
         return new Promise((resolve, reject) => {
@@ -108,10 +146,13 @@ class MediaRecorder {
                 return;
             }
 
-            this.audioRecorder.onstop = () => {
+            this.audioRecorder.onstop = async () => {
                 this.isAudioRecording = false;
                 
-                // Create blob
+                // Save any remaining chunks
+                await this.saveAudioChunk();
+                
+                // Create final blob
                 const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
                 
                 // Store this recording
@@ -245,6 +286,12 @@ class MediaRecorder {
 
     onError(callback) {
         this.callbacks.onError = callback;
+        return this;
+    }
+
+    // Add callback for audio chunks
+    onAudioChunk(callback) {
+        this.callbacks.onAudioChunk = callback;
         return this;
     }
 }

@@ -1,84 +1,73 @@
-{% comment %} # interview.html {% endcomment %}
-{% extends "base.html" %} {% block title %}Interview Session{% endblock %} {%
-  block content %}
-  <div
-    id="notification"
-    class="hidden mb-4 p-4 rounded-md text-white font-medium text-center"
-  >
-    Recording in progress...
-  </div>
-  
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <!-- Left side - Webcam view -->
-    <div class="bg-white p-4 rounded-lg shadow-md">
-      <h2 class="text-xl font-bold mb-4">Camera Preview</h2>
-      <div class="relative aspect-video bg-gray-900 rounded-md overflow-hidden">
-        <video
-          id="webcam"
-          class="w-full h-full object-cover"
-          autoplay
-          muted
-        ></video>
-        <div
-          id="timer"
-          class="absolute top-2 right-2 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full font-mono text-lg"
-        >
-          10:00
-        </div>
-      </div>
-      <div class="mt-4 flex justify-between">
-        <button
-          id="micToggle"
-          class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5 mr-2"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-            />
-          </svg>
-          Microphone On
-        </button>
-        <button
-          id="cancelInterview"
-          class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md"
-        >
-          End Interview
-        </button>
-      </div>
-    </div>
-  
-    <!-- Right side - Questions -->
-    <div class="bg-white p-4 rounded-lg shadow-md">
-      <h2 class="text-xl font-bold mb-4">Interview Questions</h2>
-      <div id="questionContainer" class="space-y-4">
-        <div class="p-4 border border-gray-300 rounded-md">
-          <p class="text-lg font-medium mb-2" id="currentQuestion">
-            Please wait while questions load...
-          </p>
-          <div class="mt-4">
-            <button
-              id="nextQuestion"
-              class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md"
-            >
-              Next Question
-            </button>
-          </div>
-        </div>
-      </div>
+{% extends "base.html" %}
+{% block title %}Interview Session{% endblock %}
+{% block content %}
+<!-- Notification Bar -->
+<div class="w-full bg-purple-600 text-white text-center py-2 font-semibold hidden" id="notification">
+ Interview is started...
+</div>
+
+<!-- Top Bar -->
+<div class="flex items-center bg-gray-800 px-6 py-3">
+  <span class="flex items-center text-red-400 font-medium mr-6">
+    <span class="h-3 w-3 rounded-full bg-red-500 inline-block mr-2"></span>
+    Recording
+  </span>
+  <span class="text-lg font-bold text-white">Frontend Developer Interview</span>
+</div>
+
+<!-- Main Content -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 bg-gray-900 min-h-[75vh] p-8">
+  <!-- Webcam Preview -->
+  <div class="flex flex-col items-center justify-center">
+    <div class="w-full aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center">
+      <video id="webcam" class="w-full h-full object-cover" autoplay muted></video>
     </div>
   </div>
-  {% endblock %} {% block scripts %}
-  <script src="{{ url_for('static', filename='js/timer.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/recorder.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/interview.js') }}"></script>
-  {% endblock %}
+  <!-- Question Box -->
+  <div class="flex flex-col justify-center">
+    <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
+      <div class="text-gray-300 text-lg font-semibold mb-2">Question 2 of 5</div>
+      <div class="text-white text-2xl font-bold mb-4">
+        Describe a challenging project you worked on and how you overcame obstacles.
+      </div>
+      <div class="mb-2 text-gray-300 font-semibold">Tips:</div>
+      <ul class="list-disc list-inside text-gray-400 space-y-1 mb-4">
+        <li>Speak clearly and at a moderate pace</li>
+        <li>Maintain eye contact with the camera</li>
+        <li>Structure your answer with clear examples</li>
+        <li>Keep your answers concise (1–2 minutes)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Bar -->
+<div class="fixed bottom-0 left-0 w-full bg-gray-800 flex items-center justify-between px-8 py-4 min-h-[10vh]">
+  <!-- Mute/Unmute Button -->
+  <button id="micToggle" class="flex items-center bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md transition-colors duration-200">
+    <!-- Microphone Off Icon -->
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+    </svg>
+    <span id="micLabel">Microphone Off</span>
+  </button>
+  <!-- Timer -->
+  <div class="text-white text-lg font-mono">
+    <span id="timer">10:00</span>
+  </div>
+  <!-- Cancel Interview Button -->
+  <button id="cancelInterview" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md flex items-center transition-colors duration-200">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+    Cancel Interview
+  </button>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/timer.js') }}"></script>
+<script src="{{ url_for('static', filename='js/recorder.js') }}"></script>
+<script src="{{ url_for('static', filename='js/interview.js') }}"></script>
+{% endblock %}
   

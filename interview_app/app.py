@@ -1,6 +1,7 @@
-from flask import Flask, render_template
+from flask import Flask
 from modules.interview import interview_bp
 import config
+from routes import register_routes
 
 def create_app():
     app = Flask(__name__)
@@ -8,10 +9,8 @@ def create_app():
     
     # Register blueprints
     app.register_blueprint(interview_bp)
-    
-    @app.route('/')
-    def index():
-        return render_template('interview.html')
+    # Register additional routes
+    register_routes(app)
     
     return app
 
