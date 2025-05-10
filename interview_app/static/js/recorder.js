@@ -2,17 +2,13 @@ class MediaRecorder {
     constructor() {
         this.stream = null;
         this.videoRecorder = null;
-        this.audioRecorder = null;
         this.videoChunks = [];
-        this.audioChunks = [];
         this.videoBlob = null;
-        this.audioBlob = null;
         this.isRecording = false;
         this.callbacks = {
             onStart: null,
             onStop: null,
-            onError: null,
-            onAudioChunk: null
+            onError: null
         };
     }
 
@@ -37,18 +33,12 @@ class MediaRecorder {
             return false;
         }
 
-        // Reset chunks
+        // Reset chunks for video
         this.videoChunks = [];
-        this.audioChunks = [];
 
         // Create video recorder
         this.videoRecorder = new window.MediaRecorder(
             new MediaStream(this.stream.getTracks())
-        );
-        
-        // Create audio recorder
-        this.audioRecorder = new window.MediaRecorder(
-            new MediaStream(this.stream.getAudioTracks())
         );
         
         // Set up video recorder events
@@ -58,19 +48,8 @@ class MediaRecorder {
             }
         };
 
-        // Set up audio recorder events
-        this.audioRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-                this.audioChunks.push(event.data);
-                if (typeof this.callbacks.onAudioChunk === 'function') {
-                    this.callbacks.onAudioChunk(event.data);
-                }
-            }
-        };
-
-        // Start recording
+        // Start video recording
         this.videoRecorder.start();
-        this.audioRecorder.start(1000); // Save audio chunks every second
         this.isRecording = true;
 
         if (typeof this.callbacks.onStart === 'function') {
@@ -88,30 +67,23 @@ class MediaRecorder {
             }
 
             this.videoRecorder.onstop = () => {
-                this.audioRecorder.stop();
-            };
-
-            this.audioRecorder.onstop = () => {
                 this.isRecording = false;
                 
-                // Create blobs
+                // Create video blob
                 this.videoBlob = new Blob(this.videoChunks, { type: 'video/webm' });
-                this.audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' });
                 
                 if (typeof this.callbacks.onStop === 'function') {
                     this.callbacks.onStop({
-                        video: this.videoBlob,
-                        audio: this.audioBlob
+                        video: this.videoBlob
                     });
                 }
                 
                 resolve({
-                    video: this.videoBlob,
-                    audio: this.audioBlob
+                    video: this.videoBlob
                 });
             };
 
-            // Stop recorders
+            // Stop video recorder
             this.videoRecorder.stop();
         });
     }
@@ -120,18 +92,9 @@ class MediaRecorder {
         return this.videoBlob ? URL.createObjectURL(this.videoBlob) : null;
     }
 
-    getAudioURL() {
-        return this.audioBlob ? URL.createObjectURL(this.audioBlob) : null;
-    }
-
     async getVideoAsBase64() {
         if (!this.videoBlob) return null;
         return await this._blobToBase64(this.videoBlob);
-    }
-
-    async getAudioAsBase64() {
-        if (!this.audioBlob) return null;
-        return await this._blobToBase64(this.audioBlob);
     }
 
     _blobToBase64(blob) {
@@ -162,11 +125,6 @@ class MediaRecorder {
 
     onError(callback) {
         this.callbacks.onError = callback;
-        return this;
-    }
-
-    onAudioChunk(callback) {
-        this.callbacks.onAudioChunk = callback;
         return this;
     }
 }
