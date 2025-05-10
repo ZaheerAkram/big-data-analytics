@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Interview Session{% endblock %}
 {% block content %}
+
 <!-- Notification Bar -->
 <div class="w-full bg-purple-600 text-white text-center py-2 font-semibold hidden" id="notification">
  Interview is started...
@@ -52,11 +53,11 @@
     </svg>
     <span id="micLabel">Microphone Off</span>
   </button>
-  <button id="micLabel2">Disable Mic</button>
   <!-- Timer -->
   <div class="text-white text-lg font-mono">
     <span id="timer">10:00</span>
   </div>
+
   <!-- Cancel Interview Button -->
   <button id="cancelInterview" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md flex items-center transition-colors duration-200">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
