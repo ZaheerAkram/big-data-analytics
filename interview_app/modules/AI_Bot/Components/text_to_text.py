@@ -3,8 +3,8 @@
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain.memory import ConversationBufferMemory
-from llm_file import LLMClient
-from add_history import append_message, read_messages
+from .llm_file import LLMClient
+from .add_history import append_message, read_messages
 
 # Initialize LLM Client
 llm = LLMClient()
@@ -60,7 +60,7 @@ def text_to_text_interview(job_title, difficulty_level, candidate_id, text):
 
     # Check if candidate history exists, if not create one
     if candidate_id not in all_history:
-        print(f"🆕 Creating new session for candidate {candidate_id}")
+        print(f"Creating new session for candidate {candidate_id}")
         
         all_history = {
             candidate_id: [
@@ -80,7 +80,7 @@ def text_to_text_interview(job_title, difficulty_level, candidate_id, text):
         }
         
     else:
-        print(f"📂 Resuming session for candidate {candidate_id}")
+        print(f"Resuming session for candidate {candidate_id}")
         all_history[candidate_id].insert(0, 
                 {
                     "role": "assistant",
@@ -129,3 +129,14 @@ def text_to_text_interview(job_title, difficulty_level, candidate_id, text):
 #         print("🧑 Interviewer:", receive_answer(history, user_input))
         
 #     append_message("interview_log.json", history)
+
+def main():
+    job_title = "Machine Learning Engineer (ML Engineer)"
+    difficulty_level = "easy"
+    candidate_id = 110
+    
+    history, all_history = text_to_text_interview(job_title, difficulty_level, candidate_id, "hi how are you")
+    
+    question = ask_question(history)
+    print("Interviewer:", question)
+

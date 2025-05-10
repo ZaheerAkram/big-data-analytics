@@ -103,10 +103,43 @@ document.addEventListener("DOMContentLoaded", () => {
     const formData = new FormData();
     formData.append("audio", blob, "recorded_audio.wav");
     console.log("Sending audio to server");
-    await fetch("/interview/save-audio", {
-      method: "POST",
-      body: formData,
-    });
+    try {
+      const response = await fetch("/interview/save-audio", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+      if (data.success && data.text) {
+        document.getElementById('humanText').textContent = data.text;
+        
+        // Send the transcribed text to generate-question route
+        const questionResponse = await fetch("/interview/generate-question", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ text: data.text })
+        });
+        const questionData = await questionResponse.json();
+        console.log("Generated question response:", questionData);
+        console.log("Generated question:", questionData.text);
+        
+        // Update the question text
+        document.getElementById('generatedQuestion').textContent = questionData.text;
+        
+        // Play the audio if audio path is provided
+        if (questionData.audio_path) {
+          const audio = new Audio(`/uploads/questions/${questionData.audio_path}`);
+          audio.play().catch(error => {
+            console.error("Error playing audio:", error);
+            showNotification("Error playing audio", "bg-red-500");
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error sending audio:", error);
+      showNotification("Error processing audio", "bg-red-500");
+    }
   }
 
   // Toggle microphone mute status
@@ -153,7 +186,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Show notification
   function showNotification(message, bgColorClass) {
     notificationElement.textContent = message;
-    notificationElement.className = `mb-4 p-4 rounded-md text-white font-medium text-center ${bgColorClass}`;
+    notificationElement.className = ` absolute mt-16 w-full opacity-90 p-4 rounded-md text-white font-medium text-center ${bgColorClass}`;
     notificationElement.classList.remove("hidden");
 
     // Auto-hide after 5 seconds

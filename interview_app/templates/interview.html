@@ -1,10 +1,12 @@
-{% extends "base.html" %}
-{% block title %}Interview Session{% endblock %}
-{% block content %}
+{% extends "base.html" %} {% block title %}Interview Session{% endblock %} {%
+block content %}
 
 <!-- Notification Bar -->
-<div class="w-full bg-purple-600 text-white text-center py-2 font-semibold hidden" id="notification">
- Interview is started...
+<div
+  class="w-full bg-purple-600 text-white text-center py-2 font-semibold hidden"
+  id="notification"
+>
+  Interview is started...
 </div>
 
 <!-- Top Bar -->
@@ -20,36 +22,65 @@
 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 bg-gray-900 min-h-[75vh] p-8">
   <!-- Webcam Preview -->
   <div class="flex flex-col items-center justify-center">
-    <div class="w-full aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center">
-      <video id="webcam" class="w-full h-full object-cover" autoplay muted></video>
+    <div
+      class="w-full aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center"
+    >
+      <video
+        id="webcam"
+        class="w-full h-full object-cover"
+        autoplay
+        muted
+      ></video>
     </div>
   </div>
   <!-- Question Box -->
   <div class="flex flex-col justify-center">
     <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
-      <div class="text-gray-300 text-lg font-semibold mb-2">Question 2 of 5</div>
-      <div class="text-white text-2xl font-bold mb-4">
-        Describe a challenging project you worked on and how you overcame obstacles.
-      </div>
-      <div class="mb-2 text-gray-300 font-semibold">Tips:</div>
-      <ul class="list-disc list-inside text-gray-400 space-y-1 mb-4">
-        <li>Speak clearly and at a moderate pace</li>
-        <li>Maintain eye contact with the camera</li>
-        <li>Structure your answer with clear examples</li>
-        <li>Keep your answers concise (1–2 minutes)</li>
-      </ul>
+      <div class="text-gray-300 text-lg font-semibold mb-2">Question:</div>
+      <p
+        id="generatedQuestion"
+        class="text-white text-md font-bold mb-4"
+      >
+        {{ generated_question if generated_question else "Welcome to the interview! Please introduce yourself." }}
+      </p>
+
+      <div class="text-gray-300 text-lg font-semibold mb-2">Your Answer:</div>
+      <p id="humanText" class="text-gray-300 text-md font-semibold mb-2">
+        {{ transcribed_text }}
+      </p>
     </div>
   </div>
 </div>
 
 <!-- Bottom Bar -->
-<div class="fixed bottom-0 left-0 w-full bg-gray-800 flex items-center justify-between px-8 py-4 min-h-[10vh]">
+<div
+  class="fixed bottom-0 left-0 w-full bg-gray-800 flex items-center justify-between px-8 py-4 min-h-[10vh]"
+>
   <!-- Mute/Unmute Button -->
-  <button id="micToggle" class="flex items-center bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md transition-colors duration-200">
+  <button
+    id="micToggle"
+    class="flex items-center bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md transition-colors duration-200"
+  >
     <!-- Microphone Off Icon -->
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      class="h-6 w-6 mr-2"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
+      />
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"
+      />
     </svg>
     <span id="micLabel">Microphone Off</span>
   </button>
@@ -59,17 +90,29 @@
   </div>
 
   <!-- Cancel Interview Button -->
-  <button id="cancelInterview" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md flex items-center transition-colors duration-200">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+  <button
+    id="cancelInterview"
+    class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md flex items-center transition-colors duration-200"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      class="h-5 w-5 mr-2"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M6 18L18 6M6 6l12 12"
+      />
     </svg>
     Cancel Interview
   </button>
 </div>
-{% endblock %}
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script src="{{ url_for('static', filename='js/timer.js') }}"></script>
 <script src="{{ url_for('static', filename='js/recorder.js') }}"></script>
 <script src="{{ url_for('static', filename='js/interview.js') }}"></script>
 {% endblock %}
-  

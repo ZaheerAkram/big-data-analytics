@@ -1,0 +1,20 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Text to Speech</title>
+</head>
+<body>
+    <h1>Enter text to convert to speech</h1>
+    <form action="/speak" method="post">
+        <textarea name="text" rows="5" cols="50"></textarea><br>
+        <select name="voice">
+            <option value="en-GB-RyanNeural">UK Male (Ryan)</option>
+            <option value="en-US-AriaNeural">US Female (Aria)</option>
+            <option value="ur-PK-AsadNeural">Urdu Male (Asad)</option>
+            <option value="ur-PK-GulNeural">Urdu Female (Gul)</option>
+        </select><br><br>
+        <input type="submit" value="Speak">
+    </form>
+</body>
+</html>

@@ -1,26 +1,30 @@
 # interview.py
 
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, render_template
 import os
 import base64
 import time
 from datetime import datetime
 import sys
 import os
+import threading
+import asyncio
 
 # Add the root directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 import io
-from AI_Bot.Components.speech_to_text import speech_text
-
-# with open("1.mp3", "rb") as f:
-#     buffer = io.BytesIO(f.read())  # Load file into buffer
-#     buffer.seek(0)
-#     text = speech_text(buffer)
-#     print("\n📝 Transcribed Text:\n", text)
+from .AI_Bot.Components.speech_to_text import speech_text
+from .AI_Bot.Components.text_to_text import text_to_text_interview, ask_question
+from .AI_Bot.Components.text_to_speech import text_speech
 
 interview_bp = Blueprint('interview', __name__, url_prefix='/interview')
+
+@interview_bp.route('/')
+def interview():
+    """Render the interview page"""
+    initial_question = "Welcome to the interview! Please introduce yourself."
+    return render_template('interview.html', generated_question=initial_question)
 
 @interview_bp.route('/save-video', methods=['POST'])
 def save_video():
@@ -59,15 +63,56 @@ def save_video():
         })
         
 @interview_bp.route('/save-audio', methods=['POST'])
-def upload():
+def save_audio():
     audio = request.files['audio']
     now = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"chunk1_{now}.wav"
+    
+    print("audio transfered for conversion")
+    # Convert audio to text
+    text = speech_text(audio)
+    print("audio converted to text: ", text)
     
     upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'audio')
     os.makedirs(upload_dir, exist_ok=True)
     
     filepath = os.path.join(upload_dir, filename)
     audio.save(filepath)
-    return 'Audio saved successfully OK'
+    return jsonify({'success': True, 'text': text})
 
+@interview_bp.route('/generate-question', methods=['POST'])
+def generate_question():
+    
+    job_title = "Machine Learning Engineer (ML Engineer)"
+    difficulty_level = "easy"
+    candidate_id = 110
+    
+    try:
+        data = request.get_json()
+        if not data or 'text' not in data:
+            return jsonify({'success': False, 'error': 'No text data provided'})
+            
+        human_text = data['text']
+        
+        history, all_history = text_to_text_interview(job_title, difficulty_level, candidate_id, human_text)
+    
+        question = ask_question(history)
+        print("Interviewer:", question)
+        
+        # Convert question to speech using asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        question_audio_path = loop.run_until_complete(text_speech(question))
+        loop.close()
+        
+        # For now, just echo back the text
+        return jsonify({
+            'success': True,
+            'text': question,
+            'audio_path': question_audio_path
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
