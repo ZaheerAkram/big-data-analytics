@@ -1,25 +1,18 @@
 class MediaRecorder {
     constructor() {
         this.stream = null;
-        this.audioRecorder = null;
         this.videoRecorder = null;
-        this.audioChunks = [];
+        this.audioRecorder = null;
         this.videoChunks = [];
-        this.audioBlob = null;
+        this.audioChunks = [];
         this.videoBlob = null;
+        this.audioBlob = null;
         this.isRecording = false;
-        this.isAudioRecording = false;
-        this.audioRecordings = []; // Array to store multiple audio recordings
-        this.currentAudioIndex = 0;
-        this.chunkInterval = 1000; // Save chunks every 1 second
-        this.lastChunkTime = 0;
         this.callbacks = {
             onStart: null,
             onStop: null,
             onError: null,
-            onAudioStart: null,
-            onAudioStop: null,
-            onAudioChunk: null // New callback for audio chunks
+            onAudioChunk: null
         };
     }
 
@@ -44,12 +37,18 @@ class MediaRecorder {
             return false;
         }
 
-        // Reset chunks for video only
+        // Reset chunks
         this.videoChunks = [];
+        this.audioChunks = [];
 
-        // Create video recorder only
+        // Create video recorder
         this.videoRecorder = new window.MediaRecorder(
             new MediaStream(this.stream.getTracks())
+        );
+        
+        // Create audio recorder
+        this.audioRecorder = new window.MediaRecorder(
+            new MediaStream(this.stream.getAudioTracks())
         );
         
         // Set up video recorder events
@@ -59,8 +58,19 @@ class MediaRecorder {
             }
         };
 
-        // Start video recording
+        // Set up audio recorder events
+        this.audioRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                this.audioChunks.push(event.data);
+                if (typeof this.callbacks.onAudioChunk === 'function') {
+                    this.callbacks.onAudioChunk(event.data);
+                }
+            }
+        };
+
+        // Start recording
         this.videoRecorder.start();
+        this.audioRecorder.start(1000); // Save audio chunks every second
         this.isRecording = true;
 
         if (typeof this.callbacks.onStart === 'function') {
@@ -70,115 +80,6 @@ class MediaRecorder {
         return true;
     }
 
-    // Start audio recording separately with chunk handling
-    startAudioRecording() {
-        if (!this.stream || this.isAudioRecording) {
-            return false;
-        }
-
-        // Reset audio chunks
-        this.audioChunks = [];
-        this.lastChunkTime = Date.now();
-
-        // Create audio recorder with specific options for chunking
-        this.audioRecorder = new window.MediaRecorder(
-            new MediaStream(this.stream.getAudioTracks()),
-            {
-                mimeType: 'audio/webm',
-                audioBitsPerSecond: 128000 // 128kbps for good quality
-            }
-        );
-        
-        // Set up audio recorder events
-        this.audioRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-                this.audioChunks.push(event.data);
-                
-                // Check if it's time to save a chunk
-                const currentTime = Date.now();
-                if (currentTime - this.lastChunkTime >= this.chunkInterval) {
-                    this.saveAudioChunk();
-                    this.lastChunkTime = currentTime;
-                }
-            }
-        };
-
-        // Start recording with timeslice for regular chunk generation
-        this.audioRecorder.start(this.chunkInterval);
-        this.isAudioRecording = true;
-        this.currentAudioIndex++;
-
-        if (typeof this.callbacks.onAudioStart === 'function') {
-            this.callbacks.onAudioStart(this.currentAudioIndex);
-        }
-
-        return true;
-    }
-
-    // Save the current audio chunk
-    async saveAudioChunk() {
-        if (this.audioChunks.length === 0) return;
-
-        // Create a blob from the current chunks
-        const chunkBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-        
-        // Convert to base64
-        const base64Data = await this._blobToBase64(chunkBlob);
-        
-        // Call the chunk callback if set
-        if (typeof this.callbacks.onAudioChunk === 'function') {
-            this.callbacks.onAudioChunk({
-                index: this.currentAudioIndex,
-                audio: base64Data,
-                timestamp: Date.now()
-            });
-        }
-        
-        // Clear the chunks after saving
-        this.audioChunks = [];
-    }
-
-    // Stop audio recording separately
-    stopAudioRecording() {
-        return new Promise((resolve, reject) => {
-            if (!this.isAudioRecording) {
-                resolve(null);
-                return;
-            }
-
-            this.audioRecorder.onstop = async () => {
-                this.isAudioRecording = false;
-                
-                // Save any remaining chunks
-                await this.saveAudioChunk();
-                
-                // Create final blob
-                const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-                
-                // Store this recording
-                this.audioRecordings.push({
-                    index: this.currentAudioIndex,
-                    blob: audioBlob
-                });
-                
-                if (typeof this.callbacks.onAudioStop === 'function') {
-                    this.callbacks.onAudioStop({
-                        index: this.currentAudioIndex,
-                        audio: audioBlob
-                    });
-                }
-                
-                resolve({
-                    index: this.currentAudioIndex,
-                    audio: audioBlob
-                });
-            };
-
-            // Stop audio recorder
-            this.audioRecorder.stop();
-        });
-    }
-
     stopRecording() {
         return new Promise((resolve, reject) => {
             if (!this.isRecording) {
@@ -186,66 +87,51 @@ class MediaRecorder {
                 return;
             }
 
-            // If audio is still recording, stop it first
-            if (this.isAudioRecording) {
-                this.stopAudioRecording();
-            }
-
             this.videoRecorder.onstop = () => {
+                this.audioRecorder.stop();
+            };
+
+            this.audioRecorder.onstop = () => {
                 this.isRecording = false;
                 
-                // Create video blob
+                // Create blobs
                 this.videoBlob = new Blob(this.videoChunks, { type: 'video/webm' });
+                this.audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' });
                 
                 if (typeof this.callbacks.onStop === 'function') {
                     this.callbacks.onStop({
                         video: this.videoBlob,
-                        audioRecordings: this.audioRecordings
+                        audio: this.audioBlob
                     });
                 }
                 
                 resolve({
                     video: this.videoBlob,
-                    audioRecordings: this.audioRecordings
+                    audio: this.audioBlob
                 });
             };
 
-            // Stop video recorder
+            // Stop recorders
             this.videoRecorder.stop();
         });
-    }
-
-    getAudioURL(index) {
-        if (index !== undefined) {
-            const recording = this.audioRecordings.find(r => r.index === index);
-            return recording ? URL.createObjectURL(recording.blob) : null;
-        }
-        return null;
     }
 
     getVideoURL() {
         return this.videoBlob ? URL.createObjectURL(this.videoBlob) : null;
     }
 
-    async getAudioAsBase64(index) {
-        if (index !== undefined) {
-            const recording = this.audioRecordings.find(r => r.index === index);
-            return recording ? await this._blobToBase64(recording.blob) : null;
-        }
-        return null;
-    }
-
-    async getAllAudioRecordingsAsBase64() {
-        const result = {};
-        for (const rec of this.audioRecordings) {
-            result[rec.index] = await this._blobToBase64(rec.blob);
-        }
-        return result;
+    getAudioURL() {
+        return this.audioBlob ? URL.createObjectURL(this.audioBlob) : null;
     }
 
     async getVideoAsBase64() {
         if (!this.videoBlob) return null;
         return await this._blobToBase64(this.videoBlob);
+    }
+
+    async getAudioAsBase64() {
+        if (!this.audioBlob) return null;
+        return await this._blobToBase64(this.audioBlob);
     }
 
     _blobToBase64(blob) {
@@ -274,22 +160,11 @@ class MediaRecorder {
         return this;
     }
 
-    onAudioStart(callback) {
-        this.callbacks.onAudioStart = callback;
-        return this;
-    }
-
-    onAudioStop(callback) {
-        this.callbacks.onAudioStop = callback;
-        return this;
-    }
-
     onError(callback) {
         this.callbacks.onError = callback;
         return this;
     }
 
-    // Add callback for audio chunks
     onAudioChunk(callback) {
         this.callbacks.onAudioChunk = callback;
         return this;
