@@ -3,3 +3,8 @@
 **/__pycache__/
 **/*.pyc
 *.env
+audio
+video
+uploads
+node_modules
+node
