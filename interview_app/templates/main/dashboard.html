@@ -1,3 +1,4 @@
+<!-- templates/main/dashboard.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,7 +16,7 @@
                     <span class="text-3xl">*</span> AI Interview
                 </span>
                 <a href="#" class="text-gray-700 font-medium hover:text-indigo-600 border-b-2 border-indigo-600 pb-1">Interviews</a>
-                <a href="{{ url_for('interview.interview') }}" class="text-gray-700 font-medium hover:text-indigo-600 pb-1">Give the Interview</a>
+                <a href="{{ url_for('main.interview_menu') }}" class="text-gray-700 font-medium hover:text-indigo-600 pb-1">Give the Interview</a>
                 <a href="{{ url_for('main.application_status') }}" class="text-gray-700 font-medium hover:text-indigo-600 pb-1">Status</a>
             </div>
             <div class="flex items-center gap-4">
@@ -38,7 +39,7 @@
     <!-- Main Content -->
     <div class="max-w-5xl mx-auto mt-10">
         <h1 class="text-3xl font-bold text-gray-900 mb-2">Your Interviews</h1>
-        <p class="text-gray-600 mb-8">Welcome, zaheer. Here are your upcoming interviews.</p>
+        <p class="text-gray-600 mb-8">Welcome, {{ session["username"] }}. Here are your upcoming interviews.</p>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             {% for interview in interviews %}
             <div class="bg-white rounded-xl shadow p-6 flex flex-col gap-3">

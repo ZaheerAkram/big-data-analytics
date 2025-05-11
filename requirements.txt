@@ -2,36 +2,12 @@ mediapipe
 opencv-python
 tensorflow
 numpy
-# dlib
-
-openai-whisper
-transformers
-langchain
-langchain-huggingface
-huggingface_hub
-python-dotenv
-langchain-community
-
-# For the Backend Folder
-django
-
-# For frontend streamlit
-streamlit
-requests
-streamlit-option-menu
-
-flask 
-flask-cors
-flask-socketio 
-eventlet
-opencv-python
-
-
 
 # For Ai-bot
 openai-whisper
 transformers
 langchain
+langchain-community
 langchain-huggingface
 huggingface_hub
 sounddevice
@@ -53,3 +29,13 @@ fastapi
 uvicorn
 requests
 python-multipart
+
+# for DB
+Flask==2.0.1
+psycopg2==2.9.9
+python-dotenv==0.19.0
+Werkzeug==2.0.1
+Flask-Login==0.5.0
+Flask-WTF==0.15.1
+email-validator==1.1.3
+boto3

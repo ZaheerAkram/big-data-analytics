@@ -10,6 +10,9 @@ import os
 import threading
 import asyncio
 import json
+from .audio_db import upload_audio_to_s3
+from .video_db import upload_video_to_s3
+from .questions_db import upload_data_to_dynamodb
 
 # Add the root directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
@@ -30,7 +33,30 @@ def interview():
         return redirect(url_for('auth.login'))
         
     system_audio_path = "system.mp3"  # The system audio file in uploads directory
-    return render_template('main/interview.html', system_audio_path=system_audio_path)
+    return render_template('main/interview.html', system_audio_path=system_audio_path, session=session)
+
+@interview_bp.route('/schedule_interview', methods=['POST'])
+def schedule_interview():
+    """Schedule an interview"""
+    if request.method == 'POST':
+        title = request.form.get('title')
+        department = request.form.get('department')
+        difficulty = request.form.get('difficulty')
+        
+        # Store values in session
+        session['title'] = title
+        session['department'] = department
+        session['difficulty_level'] = difficulty
+                
+        print("Interview Title:", title)
+        print("Department:", department)
+        print("Difficulty Level:", difficulty)
+        
+        # You can process or store the data here
+        
+        return redirect(url_for('interview.interview'))  # redirect or render success message
+    return render_template('main/interview_menu.html')
+
 
 @interview_bp.route('/save-video', methods=['POST'])
 def save_video():
@@ -55,6 +81,14 @@ def save_video():
         filepath = os.path.join(upload_dir, filename)
         with open(filepath, 'wb') as f:
             f.write(video_data)
+        
+        # Upload the video file to S3
+        try:
+            upload_video_to_s3(filepath, session['user_id'])
+            print(f"Uploaded video to S3: {filepath}")
+        except Exception as e:
+            print(f"Error uploading video to S3: {e}")
+            return jsonify({'success': False, 'error': 'Failed to upload video to S3'})
         
         return jsonify({
             'success': True,
@@ -82,18 +116,30 @@ def save_audio():
     upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'audio')
     os.makedirs(upload_dir, exist_ok=True)
     
+    # Save the audio file to Aws S3
+    
     filepath = os.path.join(upload_dir, filename)
     audio.save(filepath)
+    
+    try:
+        upload_audio_to_s3(filepath, session['user_id'])
+    except Exception as e:
+        print(f"Error uploading audio to S3: {e}")
+        
     return jsonify({'success': True, 'text': text})
 
 @interview_bp.route('/generate-question', methods=['POST'])
-def generate_question():
-    
-    job_title = "Machine Learning Engineer (ML Engineer)"
-    difficulty_level = "easy"
+def generate_question():   
+    # print("Generating question...")
+    # print("job_title: ", job_title)
+    # print("difficulty_level: ", difficulty_level)
+        
+    job_title = session.get('title', 'Software Engineer')
+    difficulty_level = session.get('difficulty_level', 'Easy')
     candidate_id = session['user_id']
     file_name = "interview_log.json"
     file_path = "ChatData/" + file_name
+    
     
     try:
         data = request.get_json()
@@ -103,8 +149,8 @@ def generate_question():
         human_text = data['text']
         
         history, all_history = text_to_text_interview(job_title, difficulty_level, candidate_id, human_text, file_name)
-        print("history: ", history)
-        print("all_history: ", all_history)
+        # print("history: ", history)
+        # print("all_history: ", all_history)
     
         question = ask_question(history)
         print("Interviewer:", question)
@@ -128,11 +174,25 @@ def generate_question():
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump(all_history, f, indent=4, ensure_ascii=False)
         
+        # Upload the updated history to DynamoDB
+        try:
+            upload_data_to_dynamodb(all_history)
+            print("Uploaded updated history to DynamoDB")
+        except Exception as e:
+            print(f"Error uploading updated history to DynamoDB: {e}")
+        
         # Convert question to speech using asyncio
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         question_audio_path = loop.run_until_complete(text_speech(question))
         loop.close()
+        
+        # Save the audio file to AWS S3
+        try:
+            upload_audio_to_s3(question_audio_path, session['user_id'])
+            print(f"Uploaded question audio to S3: {question_audio_path}")
+        except Exception as e:
+            print(f"Error uploading question audio to S3: {e}")
         
         # For now, just echo back the text
         return jsonify({
@@ -145,3 +205,6 @@ def generate_question():
             'success': False,
             'error': str(e)
         })
+
+
+

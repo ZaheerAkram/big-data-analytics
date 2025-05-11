@@ -11,6 +11,7 @@ class Config:
     DB_HOST = os.getenv('DB_HOST')
     DB_PORT = os.getenv('DB_PORT')
     
+    
     # Application configuration
     SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')
     

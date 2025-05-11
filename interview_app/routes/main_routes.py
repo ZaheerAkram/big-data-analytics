@@ -66,3 +66,11 @@ def application_status():
         ]
     # return redirect(url_for('main.application_status'), applications=applications)
     return render_template('main/application_status.html', applications=applications, session=session)
+
+@main_bp.route('/interview_menu')
+def interview_menu():
+    if 'user_id' not in session:
+        flash('Please log in to view interview status.', 'error')
+        return redirect(url_for('auth.login'))
+    
+    return render_template('main/interview_menu.html', session=session)
