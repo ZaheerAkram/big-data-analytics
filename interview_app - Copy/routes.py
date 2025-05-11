@@ -1,4 +1,6 @@
 from flask import render_template, request, redirect, url_for, session
+from modules.user_model import User
+from modules.db import db
 
 def register_routes(app):
     @app.route('/')

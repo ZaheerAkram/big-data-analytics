@@ -121,9 +121,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function sendAudioToServer() {
-    const blob = new Blob(audioChunks, { type: "audio/webm" });
+    const blob = new Blob(audioChunks, { type: "audio/wav" });
     const formData = new FormData();
-    formData.append("audio", blob, "recorded_audio.webm");
+    formData.append("audio", blob, "recorded_audio.wav");
     console.log("Sending audio to server");
     try {
       const response = await fetch("/interview/save-audio", {
@@ -151,7 +151,6 @@ document.addEventListener("DOMContentLoaded", () => {
         
         // Play the audio if audio path is provided
         if (questionData.audio_path) {
-
           const audio = new Audio(`/uploads/questions/${questionData.audio_path}`);
           audio.play().catch(error => {
             console.error("Error playing audio:", error);

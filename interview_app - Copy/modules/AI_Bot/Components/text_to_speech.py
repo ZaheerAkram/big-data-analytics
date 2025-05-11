@@ -4,7 +4,6 @@ import asyncio
 import edge_tts # type: ignore
 import os
 import uuid
-from flask import current_app
 from datetime import datetime
 
 async def text_speech(prompt: str, voice: str = "en-GB-RyanNeural") -> str:
@@ -22,10 +21,8 @@ async def text_speech(prompt: str, voice: str = "en-GB-RyanNeural") -> str:
         # Get the current file's directory and navigate to interview_app/uploads/questions
         current_dir = os.path.dirname(os.path.abspath(__file__))
         interview_app_dir = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
-        # upload_dir = os.path.join(interview_app_dir, "uploads", "questions")
-        upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'questions')
+        upload_dir = os.path.join(interview_app_dir, "uploads", "questions")
         os.makedirs(upload_dir, exist_ok=True)
-        
 
         # Generate filename with current date and time
         current_time = datetime.now().strftime("%Y%m%d_%H%M%S")

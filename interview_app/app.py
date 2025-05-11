@@ -1,31 +1,32 @@
 from flask import Flask, send_from_directory
-from modules.interview import interview_bp
-import config
-from routes import register_routes
 import os
-from modules.db import db
+from config import Config
+from modules.database import DatabaseConnection, UserDB
+from routes import init_app
 
-def create_app():
-    app = Flask(__name__)
-    app.config.from_object(config.Config)
-    db.init_app(app)
-    
-    # Configure static folder for uploads
-    app.static_folder = 'static'
-    app.static_url_path = '/static'
-    
-    # Add route to serve files from uploads directory
-    @app.route('/uploads/<path:filename>')
-    def serve_upload(filename):
-        return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER']), filename)
-    
-    # Register blueprints
-    app.register_blueprint(interview_bp)
-    # Register additional routes
-    register_routes(app)
-    
-    return app
+app = Flask(__name__)
+app.config.from_object(Config)
+
+# Initialize database connection pool
+DatabaseConnection.initialize_pool()
+
+# Create uploads directory if it doesn't exist
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Serve files from uploads directory
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+# Serve files from uploads directory
+@app.route('/uploads/questions/<path:filename>')
+def serve_audio(filename):
+    directory = os.path.join(app.root_path, 'uploads', 'questions')
+    print(f"Serving file: {directory}")
+    return send_from_directory(directory, filename)
+
+# Initialize routes
+init_app(app)
 
 if __name__ == '__main__':
-    app = create_app()
     app.run(debug=True)

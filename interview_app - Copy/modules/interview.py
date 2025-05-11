@@ -1,6 +1,6 @@
 # interview.py
 
-from flask import Blueprint, request, jsonify, current_app, render_template, session, redirect, url_for, flash
+from flask import Blueprint, request, jsonify, current_app, render_template
 import os
 import base64
 import time
@@ -25,12 +25,8 @@ interview_bp = Blueprint('interview', __name__, url_prefix='/interview')
 @interview_bp.route('/')
 def interview():
     """Render the interview page"""
-    if 'user_id' not in session:
-        flash('Please log in to access the interview.', 'error')
-        return redirect(url_for('auth.login'))
-        
     system_audio_path = "system.mp3"  # The system audio file in uploads directory
-    return render_template('main/interview.html', system_audio_path=system_audio_path)
+    return render_template('interview.html', system_audio_path=system_audio_path)
 
 @interview_bp.route('/save-video', methods=['POST'])
 def save_video():
@@ -72,7 +68,7 @@ def save_video():
 def save_audio():
     audio = request.files['audio']
     now = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"chunk1_{now}.webm"
+    filename = f"chunk1_{now}.wav"
     
     print("audio transfered for conversion")
     # Convert audio to text
@@ -91,9 +87,8 @@ def generate_question():
     
     job_title = "Machine Learning Engineer (ML Engineer)"
     difficulty_level = "easy"
-    candidate_id = session['user_id']
+    candidate_id = "110"
     file_name = "interview_log.json"
-    file_path = "ChatData/" + file_name
     
     try:
         data = request.get_json()
@@ -125,7 +120,7 @@ def generate_question():
             all_history.append({str(candidate_id): history})
             
         # Save the entire history as a single update
-        with open(file_path, 'w', encoding='utf-8') as f:
+        with open("ChatData/interview_log.json", 'w', encoding='utf-8') as f:
             json.dump(all_history, f, indent=4, ensure_ascii=False)
         
         # Convert question to speech using asyncio
