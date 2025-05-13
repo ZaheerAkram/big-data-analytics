@@ -1,7 +1,7 @@
 from flask import Flask, send_from_directory
 import os
 from config import Config
-from modules.database import DatabaseConnection, UserDB
+from modules.database import DatabaseConnection, UserDB, JobPositionDB, UserJobApplicationDB
 from routes import init_app
 import boto3
 
@@ -15,6 +15,8 @@ DatabaseConnection.initialize_pool()
 
 # Create tables if they don't exist
 UserDB.create_tables()
+JobPositionDB.create_table()
+UserJobApplicationDB.create_user_applications_table()
 
 # Create uploads directory if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)

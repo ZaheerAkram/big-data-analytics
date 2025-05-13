@@ -38,6 +38,7 @@ difficulty_level = "easy"
 history = [
     {
         "role": "system",
+        "job_title": job_title,
         "content": SYSTEM_PROMPT.format(job_title=job_title, difficulty_level=difficulty_level)
     }
 ]
@@ -69,10 +70,11 @@ def text_to_text_interview(
             return history, all_history
 
     # If we get here, no existing history was found
-    print(f"✅ Creating new session for candidate {candidate_id}")
+    print(f"Creating new session for candidate {candidate_id}")
     history = [
         {
             "role": "system",
+            "job_title": job_title,
             "content": SYSTEM_PROMPT.format(job_title=job_title, difficulty_level=difficulty_level)
         },
         {
