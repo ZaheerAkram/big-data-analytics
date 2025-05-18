@@ -1,62 +1,129 @@
 # evaluate_response.py
 
-from add_history import read_messages, append_message
-from llm_file import LLMClient
+import os
+import json
+import re
+from langchain.output_parsers import StructuredOutputParser, ResponseSchema
+from .add_history import read_messages, append_message
+from .llm_file import LLMClient
 
+# === Setup LLM & Output Schema ===
 llm = LLMClient()
 
-SYSTEM_PROMPT = """
-You are a professional technical interviewer at a top-tier tech company, such as Google, Microsoft, Amazon, or Apple.
+response_schemas = [
+    ResponseSchema(name="score", description="Numerical score between 0 and 10"),
+    ResponseSchema(name="feedback", description="Short feedback on the candidate's answer"),
+    ResponseSchema(name="justification", description="Explanation of why the score and feedback were given"),
+    ResponseSchema(name="correct_answer", description="Ideal or model answer for the question")
+]
 
-Your task is to evaluate the candidate's answers based on their correctness and clarity. After each answer:
-- Score the candidate's response from 1 to 10 based on accuracy.
-- Provide feedback on whether the answer is "correct" or "incorrect."
-- Provide the actual correct answer in the concise way as should be answered in the interview.
+parser = StructuredOutputParser.from_response_schemas(response_schemas)
+format_instructions = parser.get_format_instructions()
 
-Your tone should remain professional and neutral, without giving unnecessary feedback. Just evaluate the answer, score it, and provide the correct answer.
+system_prompt = f"""
+You are an expert technical interviewer.
 
-Job Title: Machine Learning Engineer (ML Engineer)
+Evaluate the candidate's answer to the given question. Provide:
+- score (0–10),
+- feedback (one-line summary),
+- justification (why this score was given),
+- correct_answer (ideal response).
 
-Interview Difficulty Level: easy
-
-Interview Question: {bot_question}
-
-Candidate's Answer: {candidate_answer}
+Respond in this exact format:
+{format_instructions}
 """
 
-def evaluate_answer(job_title, difficulty_level, history):
-    """Evaluate the candidate's answer."""
-    
-    evaluation = []
-    question = ""
-    candidate_answer = ""
-    for message in history[0]:
-        if message["role"] == "assistant":
-            # Extract the assistant's question
-            question = message["content"]
-            # print(f"Question: {question}")
-        if message["role"] == "user":
-            # Extract the candidate's answer
-            candidate_answer = message["content"]
-            # print(f"Candidate Answer: {candidate_answer}")
-        else:
-            # Skip any other roles
-            continue
-        
-        chat_message = [
-            {
-                "role": "system",
-                "content": SYSTEM_PROMPT.format(job_title=job_title, difficulty_level=difficulty_level, bot_question=question, candidate_answer=candidate_answer)
-            }]
-        response = llm.chat(chat_message)
-        evaluation.append({"role": "assistant", "content": question})
-        evaluation.append({"role": "user", "content": candidate_answer})
-        evaluation.append({"role": "evaluation_assistant", "content": response.content})
-        print(f"Response {len(evaluation) // 3} of {len(history[0]) // 2} saved")
+def interview_evaluation(candidate_id, job_title, file_path='interview_log.json'):
+    # Adjust file path to point to the actual location
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'ChatData'))
+    full_path = os.path.join(base_dir, file_path)
 
-    append_message("interview_evaluation_log.json", evaluation)
+    print(f"Looking for file at: {full_path}")  # Debug line
+
+    with open(full_path, 'r') as file:
+        interview_log = json.load(file)
+
+    print(f"Candidate ID: {candidate_id}")
+    print(f"job title: {job_title}")
+
+    # === Extract Q&A pairs ===
+    qa_pairs = []
+
+    for entry in interview_log:
+        for key, messages in entry.items():
+            print(f"key: {key}")
+            print(f"messages: {messages}")
+            # if (key == candidate_id) and (messages[0]["job_title"] == job_title):
+                # Extract Q&A pairs from the messages
+            print("User ID and job title match.")
+            for i in range(len(messages) - 1):
+                if messages[i]["role"] == "assistant" and messages[i+1]["role"] == "user":
+                    qa_pairs.append({
+                        "question": messages[i]["content"],
+                        "answer": messages[i+1]["content"]
+                    })
     
-    return evaluation
+    if qa_pairs == []:
+        print("No Q&A pairs found for the specified candidate ID and job title.")
+        return []
     
-history = read_messages("interview_log.json")
-evaluate_answer("Machine Learning Engineer (ML Engineer)", "easy", history)
+    print(f"Found {len(qa_pairs)} question-answer pairs to evaluate.")
+
+    # === Evaluate each Q&A pair ===
+    evaluations = []
+
+    for i, qa in enumerate(qa_pairs):
+        print(f"\nEvaluating Q&A pair {i+1}/{len(qa_pairs)}")
+
+        question = qa["question"]
+        answer = qa["answer"]
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"Question: {question}\nAnswer: {answer}"}
+        ]
+
+        try:
+            response = llm.chat(messages)
+            raw = response.content
+
+            # Attempt structured parse
+            try:
+                parsed = parser.parse(raw)
+            except Exception:
+                print("⚠️ Structured parse failed, attempting manual JSON fix.")
+                raw_fixed = raw.replace('\n', ' ')
+                raw_fixed = re.sub(r'(\d+)\s*"', r'\1, "', raw_fixed)
+                raw_fixed = re.sub(r',\s*}', '}', raw_fixed)
+                raw_fixed = re.sub(r',\s*]', ']', raw_fixed)
+
+                parsed = json.loads(raw_fixed)
+
+            evaluations.append({
+                "question": question,
+                "answer": answer,
+                "evaluation": parsed
+            })
+            print(f"✅ Score: {parsed['score']}, Feedback: {parsed['feedback']}")
+
+        except Exception as err:
+            print(f"❌ Failed to evaluate Q&A pair {i+1}: {err}")
+            pass
+
+    # Save evaluations
+    eval_path = f'{candidate_id}_evaluation.json'
+    eval_path = os.path.join(base_dir, eval_path)
+    append_message(eval_path, evaluations)
+
+    scoring = 0
+    for messages in evaluations:
+        scoring += int(messages['evaluation']['score'])
+    
+    scoring = scoring / len(evaluations)
+    return scoring, True
+
+# candidate_id = "1"
+# job_title = "IOT eng"
+
+# score = interview_evaluation(candidate_id, job_title) 
+# print(score)

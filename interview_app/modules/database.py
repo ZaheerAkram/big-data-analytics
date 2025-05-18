@@ -268,9 +268,30 @@ class JobPositionDB:
             if cursor:
                 cursor.close()
             if conn:
-                DatabaseConnection.return_connection(conn)
+                DatabaseConnection.return_connection(conn)    
+   
+    @staticmethod
+    def get_job_title_by_id(job_id):
+        conn = None
+        try:
+            conn = DatabaseConnection.get_connection()
+            cursor = conn.cursor()
 
-        
+            cursor.execute("""
+                SELECT title FROM job_positions
+                WHERE job_id = %s;
+            """, (job_id,))
+            result = cursor.fetchone()
+            return result[0] if result else None
+
+        except Exception as e:
+            print(f"Error retrieving job title by ID: {e}")
+            return None
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                DatabaseConnection.return_connection(conn)
 
     @staticmethod
     def get_all_positions():
@@ -402,8 +423,7 @@ class JobPositionDB:
                 cursor.close()
             if conn:
                 DatabaseConnection.return_connection(conn)
-                
-                
+                             
     @staticmethod
     def get_job_id_by_title(title):
         conn = None
@@ -429,8 +449,6 @@ class JobPositionDB:
                 cursor.close()
             if conn:
                 DatabaseConnection.return_connection(conn)
-
-
 
 class UserJobApplicationDB:
     @staticmethod
@@ -510,3 +528,111 @@ class UserJobApplicationDB:
                 cursor.close()
             if conn:
                 DatabaseConnection.return_connection(conn)
+
+
+class InterviewStatusDB:
+    @staticmethod
+    def create_interview_status_table():
+        conn = None
+        try:
+            conn = DatabaseConnection.get_connection()
+            cursor = conn.cursor()
+
+            # Check if interview_status table exists
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables
+                    WHERE table_name = 'interview_status'
+                );
+            """)
+            exists = cursor.fetchone()[0]
+
+            if not exists:
+                cursor.execute("""
+                    CREATE TABLE interview_status (
+                        interview_id SERIAL PRIMARY KEY,
+                        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                        job_id INTEGER NOT NULL REFERENCES job_positions(job_id) ON DELETE CASCADE,
+                        score NUMERIC,
+                        completed BOOLEAN DEFAULT FALSE,
+                        UNIQUE(user_id, job_id)
+                    );
+                """)
+                conn.commit()
+                print("interview_status table created successfully!")
+            else:
+                print("interview_status table already exists.")
+        except Exception as e:
+            print(f"Error creating interview_status table: {e}")
+            if conn:
+                conn.rollback()
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                DatabaseConnection.return_connection(conn)
+    
+    @staticmethod
+    def set_interview_status(user_id, job_id, score=None, completed=False):
+        conn = None
+        try:
+            conn = DatabaseConnection.get_connection()
+            cursor = conn.cursor()
+
+            # Check if record exists
+            cursor.execute("""
+                SELECT interview_id FROM interview_status
+                WHERE user_id = %s AND job_id = %s;
+            """, (user_id, job_id))
+            existing = cursor.fetchone()
+
+            if existing:
+                # Update existing record
+                cursor.execute("""
+                    UPDATE interview_status
+                    SET score = %s, completed = %s
+                    WHERE interview_id = %s;
+                """, (score, completed, existing[0]))
+                conn.commit()
+                return existing[0]
+            else:
+                # Insert new record
+                cursor.execute("""
+                    INSERT INTO interview_status (user_id, job_id, score, completed)
+                    VALUES (%s, %s, %s, %s)
+                    RETURNING interview_id;
+                """, (user_id, job_id, score, completed))
+                interview_id = cursor.fetchone()[0]
+                conn.commit()
+                return interview_id
+        except Exception as e:
+            print(f"Error setting interview status: {e}")
+            if conn:
+                conn.rollback()
+            return None
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                DatabaseConnection.return_connection(conn)
+    
+    @staticmethod
+    def get_all_interview_statuses():
+        conn = None
+        try:
+            conn = DatabaseConnection.get_connection()
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT * FROM interview_status;")
+            rows = cursor.fetchall()
+            return rows
+
+        except Exception as e:
+            print(f"Error retrieving interview statuses: {e}")
+            return []
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                DatabaseConnection.return_connection(conn)
+

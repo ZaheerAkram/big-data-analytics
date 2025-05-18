@@ -23,6 +23,7 @@ langchain-groq
 edge-tts
 pygame
 numpy
+pydantic
 
 # for FastAPI
 fastapi

@@ -1,0 +1,32 @@
+[
+    {
+        "question": "Welcome to the interview! Please introduce yourself.",
+        "answer": " Hi, my name is Zaheer and I am a student of Data Science. Currently I am pursuing my masters from IDU.",
+        "evaluation": {
+            "score": "6",
+            "feedback": "Good start, but lacks professional touch",
+            "justification": "The candidate introduces themselves, providing basic information about their name, educational background, and current status. However, a more polished and professional introduction would be expected in a technical interview setting, perhaps highlighting relevant skills or experiences.",
+            "correct_answer": "Hello, my name is Zaheer, and I am a Master's student at IDU, with a strong foundation in [specific skills or areas of interest]. I'm excited to discuss my skills and experiences with you."
+        }
+    },
+    {
+        "question": "What is your understanding of the concept of activation functions in deep neural networks?",
+        "answer": " Activation function in Deep neural network are used to scale the output in a specific range. For example, using a sigmoid will be scale the output from 0 to 1 rather than 10 is used to scale from minus 1 to 1.",
+        "evaluation": {
+            "score": "6",
+            "feedback": "Good start, but lacks depth and accuracy.",
+            "justification": "The candidate understands the basic concept of activation functions, specifically the example of sigmoid and tanh functions, but fails to explain their purpose, types, and importance in deep neural networks. The explanation is limited to scaling the output, which is only a partial truth.",
+            "correct_answer": "Activation functions in deep neural networks are used to introduce non-linearity into the model, allowing it to learn complex relationships between inputs and outputs. They take the output of a linear transformation and map it to a specific range, enabling the model to learn and make predictions. Common examples include sigmoid, tanh, ReLU, and softmax, each with its own strengths and weaknesses."
+        }
+    },
+    {
+        "question": "Can you explain the purpose of the ReLU activation function, and how it differs from the sigmoid function?",
+        "answer": " ReLU is used to reduce the problem of vanishing gradient descent while the sigmoid drawback is the vanishing gradient problem. ReLU output is 0 or the maximum any value while the sigmoid value is from 0 to 1.",
+        "evaluation": {
+            "score": "7",
+            "feedback": "Good start, but lacks clarity and completeness",
+            "justification": "The answer correctly identifies the vanishing gradient problem as a drawback of sigmoid and that ReLU helps mitigate it. However, the explanation is brief and lacks clarity, especially in explaining the purpose of ReLU. Additionally, the description of ReLU's output is not precise.",
+            "correct_answer": "The ReLU (Rectified Linear Unit) activation function is used to introduce non-linearity in neural networks, allowing the model to learn more complex relationships between inputs and outputs. Its purpose is to output 0 for negative inputs and the input value itself for positive values. This helps to alleviate the vanishing gradient problem, which occurs when gradients are multiplied during backpropagation, resulting in very small values. In contrast, the sigmoid function maps inputs to a value between 0 and 1, which can lead to the vanishing gradient problem. Unlike ReLU, sigmoid is typically used for output layers when the task is a binary classification problem."
+        }
+    }
+]

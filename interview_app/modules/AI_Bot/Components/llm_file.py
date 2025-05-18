@@ -34,9 +34,17 @@ class LLMClient:
         """
         return self.llm.invoke(prompt)
 
+
+model = ChatGroq(
+            groq_api_key=GROQ_API_KEY,
+            model="llama3-70b-8192",
+            temperature='0.5',
+            max_tokens= 300
+        )
+
 # --- For standalone testing ---
 if __name__ == "__main__":
     prompt = "Write a short story about a robot who learns to bake."
     client = LLMClient()
-    response = client.chat(prompt)
+    response = client.stream(prompt)
     print("🤖 Chatbot Response:\n", response.content)

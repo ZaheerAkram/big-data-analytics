@@ -1,4 +1,6 @@
 from flask import render_template, redirect, url_for, session, flash
+from modules.AI_Bot.Components.evaluate_response import interview_evaluation
+from modules.database import InterviewStatusDB, UserJobApplicationDB, JobPositionDB
 from . import main_bp
 
 @main_bp.route('/')
@@ -11,29 +13,21 @@ def dashboard():
         flash('Please log in to access the dashboard.', 'error')
         return redirect(url_for('auth.login'))
     
-    # Sample interview data - replace with actual data from database
-    interviews = [
-        {
-            'title': 'Software Engineer Interview',
-            'date': '2024-03-20',
-            'time': '10:00 AM',
-            'status': 'Completed',
-            'score': 85
-        },
-        {
-            'title': 'Data Scientist Interview',
-            'date': '2024-03-25',
-            'time': '2:00 PM',
-            'status': 'Scheduled'
-        },
-        {
-            'title': 'Product Manager Interview',
-            'date': 'TBD',
-            'time': 'TBD',
-            'status': 'Awaiting Schedule'
-        }
-    ]
+    # completed = False
+    # score, completed = interview_evaluation(session['user_id'], session['title'])
     
+    interviews = []
+    all_statuses = InterviewStatusDB.get_all_interview_statuses()
+    for status in all_statuses:
+        title = JobPositionDB.get_job_title_by_id(status[2])
+        interviews.append(
+            {
+            'Interview_id': status[0],
+            'title' : title,
+            'status': 'Completed' if status[2] else 'Not Completed',
+            'score': status[3]
+            }
+        )
     return render_template('main/dashboard.html', interviews=interviews, session=session)
 
 @main_bp.route('/application_status')

@@ -10,10 +10,11 @@ import os
 import threading
 import asyncio
 import json
-from modules.database import JobPositionDB, UserJobApplicationDB
+from modules.database import JobPositionDB, UserJobApplicationDB, InterviewStatusDB
 # from .audio_db import upload_audio_to_s3
 # from .video_db import upload_video_to_s3
 # from .questions_db import upload_data_to_dynamodb
+# from .AI_Bot.Components.evaluate_response import evaluate_answer
 
 # Add the root directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
@@ -23,6 +24,7 @@ from .AI_Bot.Components.speech_to_text import speech_text
 from .AI_Bot.Components.text_to_text import text_to_text_interview, ask_question
 from .AI_Bot.Components.text_to_speech import text_speech
 from .AI_Bot.Components.add_history import append_message, read_messages
+from .AI_Bot.Components.evaluate_response import interview_evaluation
 
 interview_bp = Blueprint('interview', __name__, url_prefix='/interview')
 
@@ -39,6 +41,11 @@ def interview():
         difficulty_level=session.get('difficulty_level', 'Easy')
     )
     job_id = JobPositionDB.get_job_id_by_title(session.get('title'))
+    session['job_id'] = str(job_id)
+    
+    # add the interview status in the interview table
+    interview_id = InterviewStatusDB.set_interview_status(user_id=session['user_id'], job_id=job_id, score=0, completed=False)
+    print(f"Interview status ID: {interview_id}")
     UserJobApplicationDB.apply_for_job(session['user_id'], job_id)
     system_audio_path = "system.mp3"  # The system audio file in uploads directory
     return render_template('main/interview.html', system_audio_path=system_audio_path, session=session)
@@ -59,9 +66,9 @@ def schedule_interview():
         print("Interview Title:", title)
         print("Department:", department)
         print("Difficulty Level:", difficulty)
-        
-        # You can process or store the data here
-        
+        # print(session)
+        # store the interview data
+                
         return redirect(url_for('interview.interview'))  # redirect or render success message
     return render_template('main/interview_menu.html')
 
@@ -90,9 +97,16 @@ def save_video():
         with open(filepath, 'wb') as f:
             f.write(video_data)
         
+        # Add the evaluation to the interview log
+        print(f"user_id: {session['user_id']}")
+        print(f"title: {session['title']}")
+        score, confirm = interview_evaluation(str(session['user_id']), str(session['title']))
+        InterviewStatusDB.set_interview_status(session['user_id'], session['job_id'], score, confirm)
+        print("Interview status updated in the database")
+        
         # Upload the video file to S3
         # try:
-        #     upload_video_to_s3(filepath, session['user_id'])
+        #     upload_video_to_s3(video_data, session['user_id'])
         #     print(f"Uploaded video to S3: {filepath}")
         # except Exception as e:
         #     print(f"Error uploading video to S3: {e}")
@@ -184,24 +198,25 @@ def generate_question():
             json.dump(all_history, f, indent=4, ensure_ascii=False)
         
         # Upload the updated history to DynamoDB
-        try:
-            # upload_data_to_dynamodb(all_history)
-            print("Uploaded updated history to DynamoDB")
-        except Exception as e:
-            print(f"Error uploading updated history to DynamoDB: {e}")
+        # try:
+        #     upload_data_to_dynamodb(all_history)
+        #     print("Uploaded updated history to DynamoDB")
+        # except Exception as e:
+        #     print(f"Error uploading updated history to DynamoDB: {e}")
         
         # Convert question to speech using asyncio
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         question_audio_path = loop.run_until_complete(text_speech(question))
         loop.close()
+        print("Question audio path:", question_audio_path)
         
         # Save the audio file to AWS S3
-        try:
-            # upload_audio_to_s3(question_audio_path, session['user_id'])
-            print(f"Uploaded question audio to S3: {question_audio_path}")
-        except Exception as e:
-            print(f"Error uploading question audio to S3: {e}")
+        # try:
+        #     upload_audio_to_s3(question_audio_path, session['user_id'])
+        #     print(f"Uploaded question audio to S3: {question_audio_path}")
+        # except Exception as e:
+        #     print(f"Error uploading question audio to S3: {e}")
         
         # For now, just echo back the text
         return jsonify({
@@ -215,5 +230,35 @@ def generate_question():
             'error': str(e)
         })
 
-
+# @interview_bp.route('/evaluate_answer', methods=['POST'])
+# def evaluate_answer():
+    """Evaluate the candidate's answer."""
+    
+    try:
+        data = request.get_json()
+        if not data or 'answer' not in data:
+            return jsonify({'success': False, 'error': 'No answer data provided'})
+        
+        # Extract the answer from the request
+        candidate_answer = data['answer']
+        
+        # Load the history from the file
+        history = read_messages("interview_log.json")
+        
+        # Get job title and difficulty level from session
+        job_title = session.get('title', 'Software Engineer')
+        difficulty_level = session.get('difficulty_level', 'Easy')
+        
+        # Evaluate the answer
+        evaluation = evaluate_answer(job_title, difficulty_level, history)
+        
+        return jsonify({
+            'success': True,
+            'evaluation': evaluation
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
 

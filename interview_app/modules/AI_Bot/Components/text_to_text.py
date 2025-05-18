@@ -54,22 +54,57 @@ def receive_answer(history, candidate_input):
     return ask_question(history)
 
 
+
 def text_to_text_interview(
     job_title, difficulty_level, candidate_id, text, file_name="interview_log.json"):
     """Conduct a text-based interview with the candidate."""
+    candidate_id = str(candidate_id)
     all_history = read_messages(file_name)
     print("Searching for candidate:", candidate_id)
     
     # Check if candidate history exists, if not create one
-    history = None
-    for record in all_history:
-        if str(candidate_id) in record:
-            history = record[str(candidate_id)]
-            print(f"Found existing history for candidate {candidate_id}")
-            history.append({"role": "user", "content": text})
-            return history, all_history
-
-    # If we get here, no existing history was found
+    candidate_found = False
+    candidate_index = -1
+    
+    # First pass - check if the exact candidate ID AND job title exists
+    for i, record in enumerate(all_history):
+        if candidate_id in record:
+            candidate_found = True
+            candidate_index = i
+            if job_title in record[candidate_id][0]['job_title']:
+                print(f"Found existing history for candidate {candidate_id} with matching job title")
+                # Append the new message to the existing history
+                all_history[i][candidate_id].append({"role": "user", "content": text})
+                return all_history[i][candidate_id], all_history
+    
+    # If we found the candidate but not with matching job title
+    if candidate_found:
+        print(f"Candidate {candidate_id} found but job title does not match. Creating new history.")
+        history = [
+            {
+                "role": "system",
+                "job_title": job_title,
+                "content": SYSTEM_PROMPT.format(job_title=job_title, difficulty_level=difficulty_level)
+            },
+            {
+                "role": "assistant",
+                "content": "Welcome to the interview! Please introduce yourself."
+            },
+            {
+                "role": "user",
+                "content": text
+            }
+        ]
+        
+        # Remove the old record with this candidate ID
+        all_history.pop(candidate_index)
+        
+        # Add the new record
+        new_record = {candidate_id: history}
+        all_history.append(new_record)
+        return history, all_history
+    
+    # If we get here, no existing history was found at all
     print(f"Creating new session for candidate {candidate_id}")
     history = [
         {
@@ -87,18 +122,26 @@ def text_to_text_interview(
         }
     ]
     # Create a new record as a dictionary
-    new_record = {str(candidate_id): history}
+    new_record = {candidate_id: history}
     all_history.append(new_record)
     return history, all_history
+
+
 
 
 def main():
     job_title = "Machine Learning Engineer (ML Engineer)"
     difficulty_level = "easy"
-    candidate_id = 110
+    candidate_id = 1
     
     history, all_history = text_to_text_interview(job_title, difficulty_level, candidate_id, "hi how are you")
     
-    question = ask_question(history)
-    print("Interviewer:", question)
+    # print("History:", history)
+    # print("All History:", all_history)
+    
+    # question = ask_question(history)
+    # print("Interviewer:", question)
+
+# main()
+
 
