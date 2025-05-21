@@ -529,7 +529,6 @@ class UserJobApplicationDB:
             if conn:
                 DatabaseConnection.return_connection(conn)
 
-
 class InterviewStatusDB:
     @staticmethod
     def create_interview_status_table():
